@@ -1,11 +1,15 @@
 package com.levy.crypto.service;
 
+import com.levy.crypto.dto.MarketSummaryDto;
+import com.levy.crypto.dto.MetricsDto;
+import com.levy.crypto.dto.VolatilityDto;
 import com.levy.crypto.model.MarketTicker;
 import lombok.Getter;
 import lombok.Setter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.yaml.snakeyaml.error.Mark;
 
 
 import java.util.*;
@@ -17,16 +21,23 @@ public class MarketService {
     private final BinanceService binanceService;
     private List<MarketTicker> latestData = new ArrayList<>();
     private Map<String, List<MarketTicker>> historyData = new HashMap<>();
+    private static final Logger log =
+            LoggerFactory.getLogger(MarketService.class);
     public MarketService(BinanceService binanceService){
         this.binanceService = binanceService;
     }
     @Scheduled(fixedRate = 5000)
     public void fetchPrices() {
        List<MarketTicker> marketTickerList =  binanceService.fetchData();
+        if (marketTickerList.isEmpty()) {
+            log.warn("No data fetched from Binance. Keeping previous market data.");
+            return;
+        }
        latestData = marketTickerList.stream()
                 .filter(ticker -> ticker.getSymbol().endsWith("USDT"))
                 .sorted(Comparator.comparing(MarketTicker::getChangePercent).reversed())
                 .toList();
+       log.info("Number of Coins " + latestData.size());
        storeHistory(latestData);
     }
 
@@ -42,7 +53,12 @@ public class MarketService {
             }
         }
     }
+    public boolean containsCoin(String symbol) {
+        String normalizedSymbol = symbol.toUpperCase();
 
+        return latestData.stream()
+                .anyMatch(data -> data.getSymbol().equals(normalizedSymbol));
+    }
     public List<MarketTicker> getTopPerformers() {
         return latestData.stream().limit(10).toList();
     }
@@ -124,5 +140,50 @@ public class MarketService {
         }
 
         return ((maxPrice - minPrice) / minPrice) * 100;
+    }
+
+    public MarketSummaryDto getMarketSummary() {
+        if (latestData.isEmpty()) {
+            return new MarketSummaryDto(0, 0.0, List.of(), List.of(), System.currentTimeMillis());
+        }
+        MarketSummaryDto marketSummary = new MarketSummaryDto();
+        int totalPairs = latestData.size();
+        double average = 0;
+        Optional<Double> totalSum = latestData.stream().map(MarketTicker::getChangePercent).reduce(Double::sum);
+        if (totalSum.isPresent()){
+            average = totalSum.get()/totalPairs;
+        }
+        List<MarketTicker> topGainers = latestData.stream().limit(10).toList();
+        List<MarketTicker> topLosers = latestData.stream().skip(Math.max(0, latestData.size() - 10)).toList();
+        long latestUpdated = System.currentTimeMillis();
+        marketSummary.setTotalPairs(totalPairs);
+        marketSummary.setAverageChange(average);
+        marketSummary.setTopGainers(topGainers);
+        marketSummary.setTopLosers(topLosers);
+        marketSummary.setLastUpdated(latestUpdated);
+
+        return marketSummary;
+    }
+
+    public MetricsDto getMetrics(String symbol) {
+        String normalizedSymbol = symbol.toUpperCase();
+        double averageAfter1Min = getAverage(normalizedSymbol, 60*1000);
+        double averageAfter5Min = getAverage(normalizedSymbol, 5*60*1000);
+        MetricsDto metricsDto = new MetricsDto();
+        metricsDto.setMovingAverage1Min(averageAfter1Min);
+        metricsDto.setMovingAverage5Min(averageAfter5Min);
+        metricsDto.setSymbol(normalizedSymbol);
+        return metricsDto;
+    }
+
+    public VolatilityDto getVolatilityBySymbol(String symbol) {
+        String normalizedSymbol = symbol.toUpperCase();
+        double volatilityAfter1Min = getVolatility(normalizedSymbol, 60*1000);
+        double volatilityAfter5Min = getVolatility(normalizedSymbol, 5*60*1000);
+        VolatilityDto volatilityDto = new VolatilityDto();
+        volatilityDto.setSymbol(normalizedSymbol);
+        volatilityDto.setVolatility1Min(volatilityAfter1Min);
+        volatilityDto.setVolatility5Min(volatilityAfter5Min);
+        return volatilityDto;
     }
 }
