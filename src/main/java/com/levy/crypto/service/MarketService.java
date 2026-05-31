@@ -21,6 +21,7 @@ public class MarketService {
     private final BinanceService binanceService;
     private List<MarketTicker> latestData = new ArrayList<>();
     private Map<String, List<MarketTicker>> historyData = new HashMap<>();
+    private long lastUpdated;
     private static final Logger log =
             LoggerFactory.getLogger(MarketService.class);
     public MarketService(BinanceService binanceService){
@@ -37,7 +38,8 @@ public class MarketService {
                 .filter(ticker -> ticker.getSymbol().endsWith("USDT"))
                 .sorted(Comparator.comparing(MarketTicker::getChangePercent).reversed())
                 .toList();
-       log.info("Number of Coins " + latestData.size());
+        lastUpdated = System.currentTimeMillis();
+        log.info("Fetched {} USDT coins", latestData.size());
        storeHistory(latestData);
     }
 
@@ -144,23 +146,18 @@ public class MarketService {
 
     public MarketSummaryDto getMarketSummary() {
         if (latestData.isEmpty()) {
-            return new MarketSummaryDto(0, 0.0, List.of(), List.of(), System.currentTimeMillis());
+            return new MarketSummaryDto(0, 0.0, List.of(), List.of(), lastUpdated);
         }
         MarketSummaryDto marketSummary = new MarketSummaryDto();
         int totalPairs = latestData.size();
-        double average = 0;
-        Optional<Double> totalSum = latestData.stream().map(MarketTicker::getChangePercent).reduce(Double::sum);
-        if (totalSum.isPresent()){
-            average = totalSum.get()/totalPairs;
-        }
+        double average = latestData.stream().mapToDouble(MarketTicker::getChangePercent).average().orElse(0.0);
         List<MarketTicker> topGainers = latestData.stream().limit(10).toList();
         List<MarketTicker> topLosers = latestData.stream().skip(Math.max(0, latestData.size() - 10)).toList();
-        long latestUpdated = System.currentTimeMillis();
         marketSummary.setTotalPairs(totalPairs);
         marketSummary.setAverageChange(average);
         marketSummary.setTopGainers(topGainers);
         marketSummary.setTopLosers(topLosers);
-        marketSummary.setLastUpdated(latestUpdated);
+        marketSummary.setLastUpdated(lastUpdated);
 
         return marketSummary;
     }

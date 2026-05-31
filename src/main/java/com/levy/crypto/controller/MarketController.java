@@ -28,25 +28,22 @@ public class MarketController {
         return marketService.getBottomPerformers();
     }
     @GetMapping("/coin/{symbol}")
-    public MarketTicker getCoin(@PathVariable String symbol) throws CoinNotFoundException {
+    public MarketTicker getCoin(@PathVariable String symbol) {
         if (!marketService.containsCoin(symbol)) {
             throw new CoinNotFoundException(symbol);
         }
         return marketService.getCoin(symbol);
     }
     @GetMapping("/history/{symbol}")
-    public ResponseEntity<List<MarketTicker>> getHistory(@PathVariable String symbol) throws CoinNotFoundException {
+    public ResponseEntity<List<MarketTicker>> getHistory(@PathVariable String symbol) {
         if (!marketService.containsCoin(symbol)) {
             throw new CoinNotFoundException(symbol);
         }
         List<MarketTicker> marketTickerList = marketService.getHistoryBySymbol(symbol);
-        if(marketTickerList  == null) {
-            return ResponseEntity.notFound().build();
-        }
         return ResponseEntity.ok().body(marketTickerList);
     }
     @GetMapping("/metrics/{symbol}")
-    public ResponseEntity<MetricsDto> getAveragePriceChange(@PathVariable String symbol) throws CoinNotFoundException {
+    public ResponseEntity<MetricsDto> getAveragePriceChange(@PathVariable String symbol) {
         if (!marketService.containsCoin(symbol)) {
             throw new CoinNotFoundException(symbol);
         }
@@ -54,7 +51,7 @@ public class MarketController {
         return ResponseEntity.ok().body(metricsDto);
     }
     @GetMapping("/volatility/{symbol}")
-    public ResponseEntity<VolatilityDto> getVolatility(@PathVariable String symbol) throws CoinNotFoundException {
+    public ResponseEntity<VolatilityDto> getVolatility(@PathVariable String symbol) {
         if (!marketService.containsCoin(symbol)) {
             throw new CoinNotFoundException(symbol);
         }
