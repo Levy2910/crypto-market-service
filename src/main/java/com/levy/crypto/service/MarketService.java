@@ -1,6 +1,7 @@
 package com.levy.crypto.service;
 
 import com.levy.crypto.dto.MarketSummaryDto;
+import com.levy.crypto.dto.MarketTickerMover;
 import com.levy.crypto.dto.MetricsDto;
 import com.levy.crypto.dto.VolatilityDto;
 import com.levy.crypto.model.MarketTicker;
@@ -8,6 +9,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.jackson.autoconfigure.JacksonProperties;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +24,8 @@ public class MarketService {
     private List<MarketTicker> latestData = new ArrayList<>();
     private Map<String, List<MarketTicker>> historyData = new HashMap<>();
     private long lastUpdated;
+    private Map<String, Integer> previousRanks = new HashMap<>();
+    private Map<String, Integer> currentRanks = new HashMap<>();
     private static final Logger log =
             LoggerFactory.getLogger(MarketService.class);
     public MarketService(BinanceService binanceService){
@@ -34,13 +38,23 @@ public class MarketService {
             log.warn("No data fetched from Binance. Keeping previous market data.");
             return;
         }
+        previousRanks = currentRanks;
        latestData = marketTickerList.stream()
                 .filter(ticker -> ticker.getSymbol().endsWith("USDT"))
                 .sorted(Comparator.comparing(MarketTicker::getChangePercent).reversed())
                 .toList();
+        currentRanks = buildRank(latestData);
         lastUpdated = System.currentTimeMillis();
         log.info("Fetched {} USDT coins", latestData.size());
        storeHistory(latestData);
+    }
+
+    private Map<String, Integer> buildRank(List<MarketTicker> latestData) {
+        Map<String, Integer> map = new HashMap<>();
+        for (int i=0; i < latestData.size(); i++){
+            map.put(latestData.get(i).getSymbol(), i+1);
+        }
+        return map;
     }
 
     private void storeHistory(List<MarketTicker> data) {
@@ -182,5 +196,21 @@ public class MarketService {
         volatilityDto.setVolatility1Min(volatilityAfter1Min);
         volatilityDto.setVolatility5Min(volatilityAfter5Min);
         return volatilityDto;
+    }
+
+    public List<MarketTickerMover> getBiggestMovers() {
+        List<MarketTickerMover> marketTickerMovers = new ArrayList<>();
+        for (MarketTicker marketTicker : latestData){
+            String symbol = marketTicker.getSymbol();
+            if (!currentRanks.containsKey(symbol) || !previousRanks.containsKey(symbol)){
+                continue;
+            }
+            int prevRank = previousRanks.get(symbol);
+            int currRank = currentRanks.get(symbol);
+            MarketTickerMover marketTickerMover = new MarketTickerMover(symbol, currRank, prevRank, prevRank - currRank);
+            marketTickerMovers.add(marketTickerMover);
+        }
+        return marketTickerMovers.stream().filter(mover -> mover.getRankJumped() > 0).sorted(Comparator.comparing(MarketTickerMover::getRankJumped).reversed()).limit(10).toList();
+
     }
 }

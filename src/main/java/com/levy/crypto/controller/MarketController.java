@@ -1,6 +1,7 @@
 package com.levy.crypto.controller;
 
 import com.levy.crypto.dto.MarketSummaryDto;
+import com.levy.crypto.dto.MarketTickerMover;
 import com.levy.crypto.dto.MetricsDto;
 import com.levy.crypto.dto.VolatilityDto;
 import com.levy.crypto.exception.CoinNotFoundException;
@@ -62,5 +63,10 @@ public class MarketController {
     public ResponseEntity<MarketSummaryDto> getMarketSummary(){
         MarketSummaryDto summary = marketService.getMarketSummary();
         return ResponseEntity.ok().body(summary);
+    }
+    @GetMapping("/biggest-movers")
+    public ResponseEntity<List<MarketTickerMover>> getBiggestMovers(){
+        List<MarketTickerMover> marketTickerMovers = marketService.getBiggestMovers();
+        return ResponseEntity.ok().body(marketTickerMovers);
     }
 }
