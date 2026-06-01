@@ -1,9 +1,6 @@
 package com.levy.crypto.service;
 
-import com.levy.crypto.dto.MarketSummaryDto;
-import com.levy.crypto.dto.MarketTickerMover;
-import com.levy.crypto.dto.MetricsDto;
-import com.levy.crypto.dto.VolatilityDto;
+import com.levy.crypto.dto.*;
 import com.levy.crypto.model.MarketTicker;
 import lombok.Getter;
 import lombok.Setter;
@@ -28,25 +25,39 @@ public class MarketService {
     private Map<String, Integer> currentRanks = new HashMap<>();
     private static final Logger log =
             LoggerFactory.getLogger(MarketService.class);
+    private boolean binanceConnected = false;
     public MarketService(BinanceService binanceService){
         this.binanceService = binanceService;
     }
     @Scheduled(fixedRate = 5000)
     public void fetchPrices() {
-       List<MarketTicker> marketTickerList =  binanceService.fetchData();
-        if (marketTickerList.isEmpty()) {
-            log.warn("No data fetched from Binance. Keeping previous market data.");
-            return;
+        try {
+            List<MarketTicker> marketTickerList =  binanceService.fetchData();
+            if (marketTickerList.isEmpty()) {
+                log.warn("No data fetched from Binance. Keeping previous market data.");
+                return;
+            }
+            previousRanks = currentRanks;
+            latestData = marketTickerList.stream()
+                    .filter(ticker -> ticker.getSymbol().endsWith("USDT"))
+                    .sorted(Comparator.comparing(MarketTicker::getChangePercent).reversed())
+                    .toList();
+            currentRanks = buildRank(latestData);
+            lastUpdated = System.currentTimeMillis();
+            binanceConnected = true;
+            log.info("Fetched {} USDT coins", latestData.size());
+            storeHistory(latestData);
+        } catch (Exception e) {
+            binanceConnected = false;
+            throw new RuntimeException(e);
         }
-        previousRanks = currentRanks;
-       latestData = marketTickerList.stream()
-                .filter(ticker -> ticker.getSymbol().endsWith("USDT"))
-                .sorted(Comparator.comparing(MarketTicker::getChangePercent).reversed())
-                .toList();
-        currentRanks = buildRank(latestData);
-        lastUpdated = System.currentTimeMillis();
-        log.info("Fetched {} USDT coins", latestData.size());
-       storeHistory(latestData);
+    }
+    public HealthDto getHealth(){
+        String status = "Down";
+       if (binanceConnected){
+           status = "Up";
+       }
+       return new HealthDto(status, latestData.size(), lastUpdated, binanceConnected);
     }
 
     private Map<String, Integer> buildRank(List<MarketTicker> latestData) {
