@@ -1,7 +1,9 @@
 package com.levy.crypto.service;
 
+import com.levy.crypto.dto.MarketSentimentDto;
 import com.levy.crypto.dto.MetricsDto;
 import com.levy.crypto.dto.VolatilityDto;
+import com.levy.crypto.dto.VolatilityRankingDto;
 import com.levy.crypto.model.MarketTicker;
 import org.springframework.stereotype.Service;
 
@@ -75,40 +77,20 @@ public class HistoryService {
         volatilityDto.setVolatility5Min(volatilityAfter5Min);
         return volatilityDto;
     }
-    //TODO: fix it tomorrow 3rd June
-//    public List<VolatilityDto> getMostVolatile(){
-//        List<VolatilityDto> volatilityDtos = new ArrayList<>();
-//        for (String coin : historyData.keySet()){
-//            List<MarketTicker> marketTickerList = historyData.get(coin);
-//            if (marketTickerList == null || marketTickerList.size() < 2) {
-//                volatilityDtos.add(new VolatilityDto(coin, 0.0, 0.0));
-//                continue;
-//            }
-//            long currTime = System.currentTimeMillis();
-//            long oneMin = 60*1000;
-//            long fiveMins = 5*60*1000;
-//            List<Double> pricesIn1Min = marketTickerList.stream()
-//                    .filter(data -> data.getTimestamp() >= currTime - oneMin)
-//                    .map(MarketTicker::getPrice)
-//                    .sorted()
-//                    .toList();
-//            double minPriceIn1Min = pricesIn1Min.getFirst();
-//            double maxPriceIn1Mins = pricesIn1Min.getLast();
-//            double volatilityAfter1Min = ((maxPriceIn1Mins - minPriceIn1Min) / minPriceIn1Min) * 100;
-//
-//            List<Double> pricesIn5Min = marketTickerList.stream()
-//                    .filter(data -> data.getTimestamp() >= currTime - fiveMins)
-//                    .map(MarketTicker::getPrice)
-//                    .sorted()
-//                    .toList();
-//            double minPriceIn5Min = pricesIn1Min.getFirst();
-//            double maxPriceIn5Mins = pricesIn1Min.getLast();
-//            double volatilityAfter5Min = ((maxPriceIn5Mins - minPriceIn5Min) / minPriceIn5Min) * 100;
-//            volatilityDtos.add(new VolatilityDto(coin, volatilityAfter1Min, volatilityAfter5Min));
-//        }
-//         return volatilityDtos.stream()
-//                 .sorted(Comparator.comparing(VolatilityDto::getVolatility1Min)).toList();
-//    }
+    public List<VolatilityRankingDto> getMostVolatile(long windows){
+        if (historyData.isEmpty()){
+            return new ArrayList<>();
+        }
+        List<VolatilityRankingDto> volatilityRankingDtos = new ArrayList<>();
+        for (String coin : historyData.keySet()){
+            double volatilityCal = getVolatility(coin, windows);
+            if (volatilityCal == 0.0){
+                continue;
+            }
+            volatilityRankingDtos.add(new VolatilityRankingDto(coin, volatilityCal));
+        }
+        return volatilityRankingDtos.stream().sorted(Comparator.comparing(VolatilityRankingDto::getVolatility).reversed()).limit(10).toList();
+    }
     private double getVolatility(String symbol, long windowMs) {
         String normalizedSymbol = symbol.toUpperCase();
 

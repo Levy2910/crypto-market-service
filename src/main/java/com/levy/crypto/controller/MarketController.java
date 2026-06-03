@@ -8,6 +8,7 @@ import com.levy.crypto.service.MarketService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
@@ -77,5 +78,15 @@ public class MarketController {
     public ResponseEntity<HealthDto> getHealth(){
         HealthDto healthDto = marketService.getHealth();
         return ResponseEntity.ok().body(healthDto);
+    }
+    @GetMapping("/most-volatile")
+    public  ResponseEntity<List<VolatilityRankingDto>> getMostVolatility(@RequestParam int min){
+        long window = min * 60000L;
+        List<VolatilityRankingDto> volatilityRankingDtos = historyService.getMostVolatile(window);
+        return ResponseEntity.ok().body(volatilityRankingDtos);
+    }
+    @GetMapping("/market-sentiment")
+    public MarketSentimentDto getMarketSentiment(){
+        return marketService.getMarketSentiment();
     }
 }

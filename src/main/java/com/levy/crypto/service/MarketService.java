@@ -90,6 +90,25 @@ public class MarketService {
                 .limit(10)
                 .toList();
     }
+    public MarketSentimentDto getMarketSentiment(){
+        if (latestData.isEmpty()){
+            return new MarketSentimentDto();
+        }
+        int total = latestData.size();
+        double bullish =
+                latestData.stream()
+                        .filter(data -> data.getChangePercent() > 0)
+                        .count() * 100.0 / total;
+        double bearish =
+                latestData.stream()
+                        .filter(data -> data.getChangePercent() < 0)
+                        .count() * 100.0 / total;
+        double neutral =
+                latestData.stream()
+                        .filter(data -> data.getChangePercent() == 0)
+                        .count() * 100.0 / total;
+        return new MarketSentimentDto(bullish, bearish, neutral, total);
+    }
 
     public MarketTicker getCoin(String symbol) {
         String normalizedSymbol = symbol.toUpperCase();
