@@ -2,6 +2,7 @@ package com.levy.crypto.service;
 
 import com.levy.crypto.dto.*;
 import com.levy.crypto.model.MarketTicker;
+import com.levy.crypto.repository.MarketTickerRepository;
 import lombok.Getter;
 import lombok.Setter;
 import org.slf4j.Logger;
@@ -28,9 +29,11 @@ public class MarketService {
     private static final Logger log =
             LoggerFactory.getLogger(MarketService.class);
     private boolean binanceConnected = false;
-    public MarketService(BinanceService binanceService, HistoryService historyService){
+    private final MarketTickerRepository marketTickerRepository;
+    public MarketService(BinanceService binanceService, HistoryService historyService, MarketTickerRepository marketTickerRepository){
         this.binanceService = binanceService;
         this.historyService = historyService;
+        this.marketTickerRepository = marketTickerRepository;
     }
     @Scheduled(fixedRate = 5000)
     public void fetchPrices() {
@@ -45,6 +48,7 @@ public class MarketService {
                     .filter(ticker -> ticker.getSymbol().endsWith("USDT"))
                     .sorted(Comparator.comparing(MarketTicker::getChangePercent).reversed())
                     .toList();
+            marketTickerRepository.saveAll(latestData);
             currentRanks = buildRank(latestData);
             lastUpdated = System.currentTimeMillis();
             binanceConnected = true;

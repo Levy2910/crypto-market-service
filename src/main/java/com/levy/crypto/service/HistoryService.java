@@ -5,12 +5,17 @@ import com.levy.crypto.dto.MetricsDto;
 import com.levy.crypto.dto.VolatilityDto;
 import com.levy.crypto.dto.VolatilityRankingDto;
 import com.levy.crypto.model.MarketTicker;
+import com.levy.crypto.repository.MarketTickerRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
 @Service
 public class HistoryService {
     private final Map<String, List<MarketTicker>> historyData = new HashMap<>();
+    private final MarketTickerRepository marketTickerRepository;
+    public HistoryService(MarketTickerRepository marketTickerRepository){
+        this.marketTickerRepository = marketTickerRepository;
+    }
 
     public void store(List<MarketTicker> data) {
         for (MarketTicker marketTicker : data) {
