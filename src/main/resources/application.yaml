@@ -2,7 +2,7 @@ spring:
   application:
     name: crypto-market-service
   datasource:
-    url: jdbc:postgresql://localhost:5432/crypto_db
+    url: jdbc:postgresql://localhost:5432/crypto
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
   jpa:
