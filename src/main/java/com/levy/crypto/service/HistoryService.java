@@ -11,28 +11,14 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 @Service
 public class HistoryService {
-    private final Map<String, List<MarketTicker>> historyData = new HashMap<>();
     private final MarketTickerRepository marketTickerRepository;
     public HistoryService(MarketTickerRepository marketTickerRepository){
         this.marketTickerRepository = marketTickerRepository;
     }
-
-    public void store(List<MarketTicker> data) {
-        for (MarketTicker marketTicker : data) {
-            String symbol = marketTicker.getSymbol();
-
-            historyData.putIfAbsent(symbol, new ArrayList<>());
-            historyData.get(symbol).add(marketTicker);
-
-            if (historyData.get(symbol).size() > 100) {
-                historyData.get(symbol).removeFirst();
-            }
-        }
-    }
     public List<MarketTicker> getHistoryBySymbol(String symbol) {
-        String normalizedSymbol = symbol.toUpperCase();
+        List<MarketTicker> marketTickerList = marketTickerRepository.findBySymbol(symbol);
 
-        return historyData.getOrDefault(normalizedSymbol, Collections.emptyList())
+        return marketTickerList
                 .stream()
                 .limit(100)
                 .toList();
@@ -50,7 +36,7 @@ public class HistoryService {
     private double getAverage(String symbol, long windowMs) {
         String normalizedSymbol = symbol.toUpperCase();
 
-        List<MarketTicker> marketTickerList = historyData.get(normalizedSymbol);
+        List<MarketTicker> marketTickerList = marketTickerRepository.findBySymbol(normalizedSymbol);
 
         if (marketTickerList == null || marketTickerList.isEmpty()) {
             return 0.0;
@@ -82,24 +68,22 @@ public class HistoryService {
         volatilityDto.setVolatility5Min(volatilityAfter5Min);
         return volatilityDto;
     }
-    public List<VolatilityRankingDto> getMostVolatile(long windows){
-        if (historyData.isEmpty()){
-            return new ArrayList<>();
-        }
-        List<VolatilityRankingDto> volatilityRankingDtos = new ArrayList<>();
-        for (String coin : historyData.keySet()){
-            double volatilityCal = getVolatility(coin, windows);
-            if (volatilityCal == 0.0){
-                continue;
-            }
-            volatilityRankingDtos.add(new VolatilityRankingDto(coin, volatilityCal));
-        }
-        return volatilityRankingDtos.stream().sorted(Comparator.comparing(VolatilityRankingDto::getVolatility).reversed()).limit(10).toList();
+    public List<VolatilityRankingDto> getMostVolatile(long windows) {
+
+        return marketTickerRepository.findDistinctSymbols().stream()
+                .map(symbol -> {
+                    double volatility = getVolatility(symbol, windows);
+                    return new VolatilityRankingDto(symbol, volatility);
+                })
+                .filter(dto -> dto.getVolatility() != 0.0)
+                .sorted(Comparator.comparing(VolatilityRankingDto::getVolatility).reversed())
+                .limit(10)
+                .toList();
     }
     private double getVolatility(String symbol, long windowMs) {
         String normalizedSymbol = symbol.toUpperCase();
 
-        List<MarketTicker> marketTickerList = historyData.get(normalizedSymbol);
+        List<MarketTicker> marketTickerList = marketTickerRepository.findBySymbol(normalizedSymbol);
 
         if (marketTickerList == null || marketTickerList.size() < 2) {
             return 0.0;

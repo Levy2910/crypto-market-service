@@ -20,7 +20,6 @@ import java.util.*;
 @Setter
 public class MarketService {
     private final BinanceService binanceService;
-    private final HistoryService historyService;
     private List<MarketTicker> latestData = new ArrayList<>();
     private Map<String, List<MarketTicker>> historyData = new HashMap<>();
     private long lastUpdated;
@@ -30,9 +29,8 @@ public class MarketService {
             LoggerFactory.getLogger(MarketService.class);
     private boolean binanceConnected = false;
     private final MarketTickerRepository marketTickerRepository;
-    public MarketService(BinanceService binanceService, HistoryService historyService, MarketTickerRepository marketTickerRepository){
+    public MarketService(BinanceService binanceService, MarketTickerRepository marketTickerRepository){
         this.binanceService = binanceService;
-        this.historyService = historyService;
         this.marketTickerRepository = marketTickerRepository;
     }
     @Scheduled(fixedRate = 5000)
@@ -53,7 +51,6 @@ public class MarketService {
             lastUpdated = System.currentTimeMillis();
             binanceConnected = true;
             log.info("Fetched {} USDT coins", latestData.size());
-            historyService.store(latestData);
         } catch (Exception e) {
             binanceConnected = false;
             throw new RuntimeException(e);
