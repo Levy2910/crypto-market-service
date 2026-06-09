@@ -5,6 +5,7 @@ import com.levy.crypto.exception.CoinNotFoundException;
 import com.levy.crypto.model.MarketTicker;
 import com.levy.crypto.service.HistoryService;
 import com.levy.crypto.service.MarketService;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -41,11 +42,12 @@ public class MarketController {
         return marketService.getCoin(symbol);
     }
     @GetMapping("/history/{symbol}")
-    public ResponseEntity<List<MarketTicker>> getHistory(@PathVariable String symbol) {
+    public ResponseEntity<Page<MarketTicker>> getHistory(@PathVariable String symbol,  @RequestParam(defaultValue = "0") int page,
+                                                         @RequestParam(defaultValue = "5") int size) {
         if (!marketService.containsCoin(symbol)) {
             throw new CoinNotFoundException(symbol);
         }
-        List<MarketTicker> marketTickerList = historyService.getHistoryBySymbol(symbol);
+        Page<MarketTicker> marketTickerList = historyService.getHistoryBySymbol(symbol, page, size);
         return ResponseEntity.ok().body(marketTickerList);
     }
     @GetMapping("/metrics/{symbol}")

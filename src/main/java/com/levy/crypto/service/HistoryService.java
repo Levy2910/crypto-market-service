@@ -1,13 +1,14 @@
 package com.levy.crypto.service;
 
-import com.levy.crypto.dto.MarketSentimentDto;
 import com.levy.crypto.dto.MetricsDto;
 import com.levy.crypto.dto.VolatilityDto;
 import com.levy.crypto.dto.VolatilityRankingDto;
 import com.levy.crypto.model.MarketTicker;
 import com.levy.crypto.repository.MarketTickerRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-
 import java.util.*;
 @Service
 public class HistoryService {
@@ -15,13 +16,10 @@ public class HistoryService {
     public HistoryService(MarketTickerRepository marketTickerRepository){
         this.marketTickerRepository = marketTickerRepository;
     }
-    public List<MarketTicker> getHistoryBySymbol(String symbol) {
-        List<MarketTicker> marketTickerList = marketTickerRepository.findBySymbol(symbol);
+    public Page<MarketTicker> getHistoryBySymbol(String symbol, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
 
-        return marketTickerList
-                .stream()
-                .limit(100)
-                .toList();
+        return marketTickerRepository.findBySymbol(symbol, pageable);
     }
     public MetricsDto getMetrics(String symbol) {
         String normalizedSymbol = symbol.toUpperCase();
