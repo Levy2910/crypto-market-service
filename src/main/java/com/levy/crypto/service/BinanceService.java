@@ -36,8 +36,7 @@ public class BinanceService {
                             Double.parseDouble(dto.getLastPrice()),
                             Double.parseDouble(dto.getPriceChangePercent()),
                             Double.parseDouble(dto.getVolume()),
-                            dto.getOpenTime(),
-                            System.currentTimeMillis()
+                            dto.getOpenTime()
                     ))
                     .toList();
         }catch (Exception e){

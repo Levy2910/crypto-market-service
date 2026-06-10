@@ -1,15 +1,12 @@
 package com.levy.crypto.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+
+import java.time.LocalDateTime;
 
 @Data
-@NoArgsConstructor
-@Getter
-@Setter
 @Entity
 public class MarketTicker {
 
@@ -22,13 +19,14 @@ public class MarketTicker {
     private double changePercent;
     private double volume;
     private long openTime;
-    private long timestamp;
-    public MarketTicker(String symbol, double price, double changePercent, double volume, long openTime, long timestamp){
+    @CreationTimestamp
+    @Column(updatable = false)
+    private LocalDateTime timestamp;
+    public MarketTicker(String symbol, double price, double changePercent, double volume, long openTime){
         this.symbol = symbol;
         this.price = price;
         this.changePercent = changePercent;
         this.volume = volume;
         this.openTime = openTime;
-        this.timestamp = timestamp;
     }
 }

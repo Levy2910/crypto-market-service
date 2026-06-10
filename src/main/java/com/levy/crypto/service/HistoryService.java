@@ -9,6 +9,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
 import java.util.*;
 @Service
 public class HistoryService {
@@ -33,27 +35,11 @@ public class HistoryService {
     }
     private double getAverage(String symbol, long windowMs) {
         String normalizedSymbol = symbol.toUpperCase();
-
-        List<MarketTicker> marketTickerList = marketTickerRepository.findBySymbol(normalizedSymbol);
-
-        if (marketTickerList == null || marketTickerList.isEmpty()) {
-            return 0.0;
-        }
-
-        long currentTime = System.currentTimeMillis();
-
-        List<MarketTicker> filteredList = marketTickerList.stream()
-                .filter(data -> data.getTimestamp() >= currentTime - windowMs)
-                .toList();
-
-        if (filteredList.isEmpty()) {
-            return 0.0;
-        }
-
-        return filteredList.stream()
-                .mapToDouble(MarketTicker::getPrice)
-                .average()
-                .orElse(0.0);
+        LocalDateTime cutoff =
+                LocalDateTime.now().minusNanos(windowMs * 1_000_000);
+        Double average = marketTickerRepository
+                .getAveragePrice(normalizedSymbol, cutoff);
+        return average != null ? average : 0.0;
     }
 
     public VolatilityDto getVolatilityBySymbol(String symbol) {
@@ -78,34 +64,10 @@ public class HistoryService {
                 .limit(10)
                 .toList();
     }
-    private double getVolatility(String symbol, long windowMs) {
+    private double getVolatility(String symbol, long windowMs){
         String normalizedSymbol = symbol.toUpperCase();
-
-        List<MarketTicker> marketTickerList = marketTickerRepository.findBySymbol(normalizedSymbol);
-
-        if (marketTickerList == null || marketTickerList.size() < 2) {
-            return 0.0;
-        }
-
-        long currentTime = System.currentTimeMillis();
-
-        List<Double> prices = marketTickerList.stream()
-                .filter(data -> data.getTimestamp() >= currentTime - windowMs)
-                .map(MarketTicker::getPrice)
-                .sorted()
-                .toList();
-
-        if (prices.size() < 2) {
-            return 0.0;
-        }
-
-        double minPrice = prices.getFirst();
-        double maxPrice = prices.getLast();
-
-        if (minPrice == 0.0) {
-            return 0.0;
-        }
-
-        return ((maxPrice - minPrice) / minPrice) * 100;
+        LocalDateTime cutoff = LocalDateTime.now().minusNanos(windowMs*1_000_000);
+        Double volatility = marketTickerRepository.getVolatility(normalizedSymbol, cutoff);
+        return volatility != null ? volatility : 0.0;
     }
 }
