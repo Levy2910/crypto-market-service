@@ -1,5 +1,6 @@
 package com.levy.crypto.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.levy.crypto.dto.*;
 import com.levy.crypto.model.MarketTicker;
 import com.levy.crypto.repository.MarketTickerRepository;
@@ -8,11 +9,14 @@ import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.jackson.autoconfigure.JacksonProperties;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.yaml.snakeyaml.error.Mark;
 
 
+import java.time.Duration;
 import java.util.*;
 
 @Service
@@ -29,9 +33,13 @@ public class MarketService {
             LoggerFactory.getLogger(MarketService.class);
     private boolean binanceConnected = false;
     private final MarketTickerRepository marketTickerRepository;
-    public MarketService(BinanceService binanceService, MarketTickerRepository marketTickerRepository){
+    private final StringRedisTemplate stringRedisTemplate;
+    private final ObjectMapper objectMapper;
+    public MarketService(BinanceService binanceService, MarketTickerRepository marketTickerRepository, StringRedisTemplate stringRedisTemplate, ObjectMapper objectMapper){
         this.binanceService = binanceService;
         this.marketTickerRepository = marketTickerRepository;
+        this.stringRedisTemplate = stringRedisTemplate;
+        this.objectMapper = objectMapper;
     }
     @Scheduled(fixedRate = 5000)
     public void fetchPrices() {
@@ -120,21 +128,51 @@ public class MarketService {
                 .orElseThrow(() -> new NoSuchElementException("Coin not found"));
     }
 
-
     public MarketSummaryDto getMarketSummary() {
-        if (latestData.isEmpty()) {
-            return new MarketSummaryDto(0, 0.0, List.of(), List.of(), lastUpdated);
+
+        String key = "market-summary";
+
+        String cached = stringRedisTemplate.opsForValue().get(key);
+
+        if (cached != null) {
+            try {
+                return objectMapper.readValue(cached, MarketSummaryDto.class);
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to deserialize cache", e);
+            }
         }
+
         MarketSummaryDto marketSummary = new MarketSummaryDto();
+
         int totalPairs = latestData.size();
-        double average = latestData.stream().mapToDouble(MarketTicker::getChangePercent).average().orElse(0.0);
+        double average = latestData.stream()
+                .mapToDouble(MarketTicker::getChangePercent)
+                .average()
+                .orElse(0.0);
+
         List<MarketTicker> topGainers = latestData.stream().limit(10).toList();
-        List<MarketTicker> topLosers = latestData.stream().skip(Math.max(0, latestData.size() - 10)).toList();
+        List<MarketTicker> topLosers = latestData.stream()
+                .skip(Math.max(0, latestData.size() - 10))
+                .toList();
+
         marketSummary.setTotalPairs(totalPairs);
         marketSummary.setAverageChange(average);
         marketSummary.setTopGainers(topGainers);
         marketSummary.setTopLosers(topLosers);
         marketSummary.setLastUpdated(lastUpdated);
+
+        try {
+            String json = objectMapper.writeValueAsString(marketSummary);
+
+            stringRedisTemplate.opsForValue().set(
+                    key,
+                    json,
+                    Duration.ofSeconds(30)
+            );
+
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to serialize cache", e);
+        }
 
         return marketSummary;
     }
