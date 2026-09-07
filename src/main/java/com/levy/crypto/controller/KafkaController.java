@@ -1,5 +1,7 @@
 package com.levy.crypto.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.levy.crypto.service.CryptoPriceUpdate;
 import com.levy.crypto.service.KafkaProducerService;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -16,8 +18,11 @@ public class KafkaController {
         this.producer = producer;
     }
 
-    @PostMapping
-    public void send(@RequestBody String message) {
-        producer.sendMessage(message);
+    @PostMapping("/price-update")
+    public void send(
+            @RequestBody CryptoPriceUpdate cryptoPriceUpdate
+    ) throws JsonProcessingException {
+
+        producer.sendPriceUpdate(cryptoPriceUpdate);
     }
 }
