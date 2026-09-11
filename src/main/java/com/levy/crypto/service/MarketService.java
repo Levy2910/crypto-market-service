@@ -192,4 +192,21 @@ public class MarketService {
         return marketTickerMovers.stream().filter(mover -> mover.getRankJumped() > 0).sorted(Comparator.comparing(MarketTickerMover::getRankJumped).reversed()).limit(10).toList();
 
     }
+
+    public String getPriceBySymbol(String symbol) {
+        String cached = stringRedisTemplate.opsForValue().get(symbol);
+        if (cached != null) {
+            return cached;
+        }
+       MarketTicker ticker = marketTickerRepository.findFirstBySymbolOrderByTimestampDesc(symbol);
+        if (ticker != null){
+            stringRedisTemplate.opsForValue().set(
+                    symbol,
+                    String.valueOf(ticker.getPrice()),
+                    Duration.ofSeconds(30)
+            );
+            return String.valueOf(ticker.getPrice());
+        }
+        return null;
+    }
 }

@@ -14,7 +14,7 @@ import java.util.List;
 public interface MarketTickerRepository
         extends JpaRepository<MarketTicker, Long> {
     Page<MarketTicker> findBySymbol(String symbol, Pageable pageable);
-    List<MarketTicker> findBySymbol(String symbol);
+    MarketTicker findFirstBySymbolOrderByTimestampDesc(String symbol);
     @Query(value = "SELECT DISTINCT symbol FROM market_ticker", nativeQuery = true)
     List<String> findDistinctSymbols();
 
@@ -31,4 +31,5 @@ public interface MarketTickerRepository
             @Param("symbol") String symbol,
             @Param("cutoff") LocalDateTime cutoff
     );
+
 }

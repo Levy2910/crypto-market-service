@@ -128,4 +128,9 @@ public class MarketController {
     public MarketSentimentDto getMarketSentiment(){
         return marketService.getMarketSentiment();
     }
+
+    @GetMapping("/price/{symbol}")
+    public String getPrice(@PathVariable String symbol){
+        return marketService.getPriceBySymbol(symbol);
+    }
 }
