@@ -2,7 +2,10 @@ package com.levy.crypto.controller;
 
 import com.levy.crypto.dto.*;
 import com.levy.crypto.exception.CoinNotFoundException;
+import com.levy.crypto.model.CryptoAnalytics;
 import com.levy.crypto.model.MarketTicker;
+import com.levy.crypto.service.AnalyticsConsumerService;
+import com.levy.crypto.service.CryptoPriceUpdate;
 import com.levy.crypto.service.HistoryService;
 import com.levy.crypto.service.MarketService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -19,9 +22,11 @@ public class MarketController {
 
     private final MarketService marketService;
     private final HistoryService historyService;
-    public MarketController(MarketService marketService, HistoryService historyService){
+    private final AnalyticsConsumerService analyticsConsumerService;
+    public MarketController(MarketService marketService, HistoryService historyService, AnalyticsConsumerService analyticsConsumerService){
         this.marketService = marketService;
         this.historyService = historyService;
+        this.analyticsConsumerService = analyticsConsumerService;
     }
     @Operation(
             description = "Get the top performers, got limit up to 10 performers"
@@ -132,5 +137,9 @@ public class MarketController {
     @GetMapping("/price/{symbol}")
     public String getPrice(@PathVariable String symbol){
         return marketService.getPriceBySymbol(symbol);
+    }
+    @GetMapping("/analytics/{symbol}")
+    public CryptoAnalytics getPriceAnalytics(@PathVariable String symbol){
+        return analyticsConsumerService.getCryptoAnalytics(symbol);
     }
 }

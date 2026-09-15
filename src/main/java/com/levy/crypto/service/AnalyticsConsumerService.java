@@ -7,6 +7,7 @@ import com.levy.crypto.repository.CryptoAnalyticsRepository;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Service
@@ -44,6 +45,7 @@ public class AnalyticsConsumerService {
             analytics.setAveragePrice(update.price());
             analytics.setHighestPrice(update.price());
             analytics.setLowestPrice(update.price());
+            analytics.setLastUpdated(LocalDateTime.now());
             analytics.setEventCount(1);
 
             cryptoAnalyticsRepository.save(analytics);
@@ -68,6 +70,7 @@ public class AnalyticsConsumerService {
                 Math.min(curr.getLowestPrice(), currentPrice)
         );
         curr.setEventCount(oldCount + 1);
+        curr.setLastUpdated(LocalDateTime.now());
 
         cryptoAnalyticsRepository.save(curr);
     }
