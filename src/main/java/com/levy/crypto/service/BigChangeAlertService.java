@@ -2,23 +2,17 @@ package com.levy.crypto.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.levy.crypto.model.CryptoAnalytics;
-import com.levy.crypto.model.MarketTicker;
-import com.levy.crypto.repository.CryptoAnalyticsRepository;
-import com.levy.crypto.repository.MarketTickerRepository;
-import org.springframework.data.redis.core.StringRedisTemplate;
+import com.levy.crypto.event.CryptoPriceUpdate;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.stereotype.Service;
 
-import java.time.Duration;
-import java.util.Optional;
-
+@Service
 public class BigChangeAlertService {
-    private final ObjectMapper objectMapper;
-    private final CryptoAnalyticsRepository cryptoAnalyticsRepository;
 
-    public BigChangeAlertService(ObjectMapper objectMapper, CryptoAnalyticsRepository cryptoAnalyticsRepository) {
+    private final ObjectMapper objectMapper;
+
+    public BigChangeAlertService(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
-        this.cryptoAnalyticsRepository = cryptoAnalyticsRepository;
     }
 
     @KafkaListener(
@@ -26,11 +20,15 @@ public class BigChangeAlertService {
             groupId = "alert-group"
     )
     public void consume(String message) throws JsonProcessingException {
+
         CryptoPriceUpdate update =
                 objectMapper.readValue(message, CryptoPriceUpdate.class);
 
-        if (update.changePercent() >= 5 ){
-            System.out.println("ALERT MAN, WAKE UP");
+        if (Math.abs(update.changePercent()) >= 5) {
+            System.out.println(
+                    "ALERT: " + update.symbol()
+                            + " moved " + update.changePercent() + "%"
+            );
         }
     }
 }

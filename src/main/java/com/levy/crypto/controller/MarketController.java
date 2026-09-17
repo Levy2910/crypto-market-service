@@ -5,7 +5,6 @@ import com.levy.crypto.exception.CoinNotFoundException;
 import com.levy.crypto.model.CryptoAnalytics;
 import com.levy.crypto.model.MarketTicker;
 import com.levy.crypto.service.AnalyticsConsumerService;
-import com.levy.crypto.service.CryptoPriceUpdate;
 import com.levy.crypto.service.HistoryService;
 import com.levy.crypto.service.MarketService;
 import io.swagger.v3.oas.annotations.Operation;

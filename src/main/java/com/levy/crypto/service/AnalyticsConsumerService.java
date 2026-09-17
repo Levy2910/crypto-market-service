@@ -2,6 +2,7 @@ package com.levy.crypto.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.levy.crypto.event.CryptoPriceUpdate;
 import com.levy.crypto.model.CryptoAnalytics;
 import com.levy.crypto.repository.CryptoAnalyticsRepository;
 import org.springframework.kafka.annotation.KafkaListener;

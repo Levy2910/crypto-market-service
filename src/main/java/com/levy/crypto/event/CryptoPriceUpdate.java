@@ -1,4 +1,4 @@
-package com.levy.crypto.service;
+package com.levy.crypto.event;
 
 public record CryptoPriceUpdate(
         String symbol,

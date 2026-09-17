@@ -2,6 +2,7 @@ package com.levy.crypto.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.levy.crypto.event.CryptoPriceUpdate;
 import com.levy.crypto.model.MarketTicker;
 import com.levy.crypto.repository.MarketTickerRepository;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -15,11 +16,13 @@ public class MarketConsumerService {
     private final ObjectMapper objectMapper;
     private final StringRedisTemplate stringRedisTemplate;
     private final MarketTickerRepository marketTickerRepository;
+    private final WebSocketService webSocketService;
 
-    public MarketConsumerService(ObjectMapper objectMapper, StringRedisTemplate stringRedisTemplate, MarketTickerRepository marketTickerRepository) {
+    public MarketConsumerService(ObjectMapper objectMapper, StringRedisTemplate stringRedisTemplate, MarketTickerRepository marketTickerRepository, WebSocketService webSocketService) {
         this.objectMapper = objectMapper;
         this.stringRedisTemplate = stringRedisTemplate;
         this.marketTickerRepository = marketTickerRepository;
+        this.webSocketService = webSocketService;
     }
 
     @KafkaListener(
@@ -30,6 +33,10 @@ public class MarketConsumerService {
 
         CryptoPriceUpdate update =
                 objectMapper.readValue(message, CryptoPriceUpdate.class);
+
+        webSocketService.sendPriceUpdate(
+                update.symbol() + " price: " + update.price()
+        );
 
         stringRedisTemplate.opsForValue().set(
                 update.symbol(),

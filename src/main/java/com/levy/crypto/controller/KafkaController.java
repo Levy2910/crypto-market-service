@@ -1,7 +1,7 @@
 package com.levy.crypto.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.levy.crypto.service.CryptoPriceUpdate;
+import com.levy.crypto.event.CryptoPriceUpdate;
 import com.levy.crypto.service.KafkaProducerService;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
