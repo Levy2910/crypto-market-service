@@ -5,8 +5,8 @@
 //import com.levy.crypto.dto.MarketSentimentDto;
 //import com.levy.crypto.model.MarketTicker;
 //import com.levy.crypto.repository.MarketTickerRepository;
-//import com.levy.crypto.service.BinanceService;
-//import com.levy.crypto.service.MarketService;
+//import com.levy.crypto.service.ingestion.BinanceService;
+//import com.levy.crypto.service.market.MarketService;
 //import org.junit.jupiter.api.Test;
 //import org.junit.jupiter.api.extension.ExtendWith;
 //import org.mockito.InjectMocks;

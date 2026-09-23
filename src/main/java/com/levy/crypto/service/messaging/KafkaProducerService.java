@@ -1,4 +1,4 @@
-package com.levy.crypto.service;
+package com.levy.crypto.service.messaging;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;

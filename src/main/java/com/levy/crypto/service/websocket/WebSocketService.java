@@ -1,4 +1,4 @@
-package com.levy.crypto.service;
+package com.levy.crypto.service.websocket;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 @Service

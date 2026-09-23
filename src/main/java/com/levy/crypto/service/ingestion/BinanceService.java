@@ -1,9 +1,7 @@
-package com.levy.crypto.service;
+package com.levy.crypto.service.ingestion;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.levy.crypto.dto.BinanceTickerDto;
-import com.levy.crypto.event.CryptoPriceUpdate;
-import com.levy.crypto.model.MarketTicker;
+import com.levy.crypto.service.messaging.KafkaProducerService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.ParameterizedTypeReference;
