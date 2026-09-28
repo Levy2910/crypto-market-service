@@ -4,7 +4,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.levy.crypto.event.CryptoPriceUpdate;
 import com.levy.crypto.model.CryptoAnalytics;
+import com.levy.crypto.model.ProcessedEvent;
 import com.levy.crypto.repository.CryptoAnalyticsRepository;
+import com.levy.crypto.repository.ProcessedEventRepository;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
@@ -16,13 +18,15 @@ public class AnalyticsConsumerService {
 
     private final ObjectMapper objectMapper;
     private final CryptoAnalyticsRepository cryptoAnalyticsRepository;
+    private final ProcessedEventRepository processedEventRepository;
 
     public AnalyticsConsumerService(
             ObjectMapper objectMapper,
-            CryptoAnalyticsRepository cryptoAnalyticsRepository) {
+            CryptoAnalyticsRepository cryptoAnalyticsRepository, ProcessedEventRepository processedEventRepository) {
 
         this.objectMapper = objectMapper;
         this.cryptoAnalyticsRepository = cryptoAnalyticsRepository;
+        this.processedEventRepository = processedEventRepository;
     }
 
     @KafkaListener(
@@ -33,6 +37,12 @@ public class AnalyticsConsumerService {
 
         CryptoPriceUpdate update =
                 objectMapper.readValue(message, CryptoPriceUpdate.class);
+
+        // check if it already exists
+        if (isUpdateProcessed(update)){
+            return;
+        }
+
 
         Optional<CryptoAnalytics> cryptoAnalytics =
                 cryptoAnalyticsRepository.findBySymbol(update.symbol());
@@ -50,6 +60,7 @@ public class AnalyticsConsumerService {
             analytics.setEventCount(1);
 
             cryptoAnalyticsRepository.save(analytics);
+            markAsProcessed(update);
             return;
         }
 
@@ -74,6 +85,22 @@ public class AnalyticsConsumerService {
         curr.setLastUpdated(LocalDateTime.now());
 
         cryptoAnalyticsRepository.save(curr);
+        // save processed event
+        markAsProcessed(update);
+    }
+
+    private void markAsProcessed(CryptoPriceUpdate update) {
+        ProcessedEvent processedEvent = new ProcessedEvent();
+        processedEvent.setConsumer("analytics-group");
+        processedEvent.setEventId(update.eventId());
+        processedEvent.setProcessedAt(LocalDateTime.now());
+        processedEventRepository.save(processedEvent);
+    }
+
+    private boolean isUpdateProcessed(CryptoPriceUpdate update) {
+        String eventId = update.eventId();
+        String consumerId = "analytics-group";
+        return processedEventRepository.existsByEventIdAndConsumer(eventId, consumerId);
     }
 
     public CryptoAnalytics getCryptoAnalytics(String symbol) {

@@ -7,6 +7,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class MarketIngestionService {
@@ -32,6 +33,7 @@ public class MarketIngestionService {
         for (BinanceTickerDto dto : data) {
 
             CryptoPriceUpdate event = new CryptoPriceUpdate(
+                    UUID.randomUUID().toString(),
                     dto.getSymbol(),
                     Double.parseDouble(dto.getLastPrice()),
                     Double.parseDouble(dto.getPriceChangePercent()),
