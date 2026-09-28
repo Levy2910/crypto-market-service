@@ -9,6 +9,7 @@ import com.levy.crypto.repository.CryptoAnalyticsRepository;
 import com.levy.crypto.repository.ProcessedEventRepository;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -29,6 +30,7 @@ public class AnalyticsConsumerService {
         this.processedEventRepository = processedEventRepository;
     }
 
+    @Transactional
     @KafkaListener(
             topics = "price-updates",
             groupId = "analytics-group"
@@ -85,6 +87,7 @@ public class AnalyticsConsumerService {
         curr.setLastUpdated(LocalDateTime.now());
 
         cryptoAnalyticsRepository.save(curr);
+
         // save processed event
         markAsProcessed(update);
     }
