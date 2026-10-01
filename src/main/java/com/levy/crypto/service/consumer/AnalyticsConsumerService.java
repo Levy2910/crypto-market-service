@@ -7,7 +7,9 @@ import com.levy.crypto.model.CryptoAnalytics;
 import com.levy.crypto.model.ProcessedEvent;
 import com.levy.crypto.repository.CryptoAnalyticsRepository;
 import com.levy.crypto.repository.ProcessedEventRepository;
+import org.springframework.kafka.annotation.DltHandler;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.annotation.RetryableTopic;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +37,7 @@ public class AnalyticsConsumerService {
             topics = "price-updates",
             groupId = "analytics-group"
     )
+    @RetryableTopic(attempts = "4")
     public void consume(String message) throws JsonProcessingException {
 
         CryptoPriceUpdate update =
@@ -111,5 +114,11 @@ public class AnalyticsConsumerService {
         return cryptoAnalyticsRepository
                 .findBySymbol(symbol.toUpperCase())
                 .orElse(null);
+    }
+    @DltHandler
+    public void listenDLT(String message) {
+
+        System.out.println("Message reached DLT:");
+        System.out.println(message);
     }
 }
